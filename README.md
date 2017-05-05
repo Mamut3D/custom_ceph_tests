@@ -1,6 +1,6 @@
 # custom_ceph_tests
 
-### What it custom_ceph_tests does
+### What it custom_ceph_test.sh does
   - creates 200 GB test image in ceph via rbd and formats it to ext4
   - creates snapshot test image
   - creates n clones based on $THREADS
