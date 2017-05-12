@@ -1,15 +1,18 @@
 #!/bin/bash
+# example call ./ceph_clone_test.sh 1 2 10 4
 
 ###################################################################################
 # Config
 ###################################################################################
 
-# How many rbd images should be created parallely 
-THREADS=1  
-# How many times the whole test should be run 
-ITERATIONS=1
+# test run numbre - affects only log file name
+RUN=$1
+# How many rbd images should be created parallely
+THREADS=$2
+# How many times the whole test should be run
+ITERATIONS=$3
 # How many copies of the TEST_FILE should be copied to RBD image
-COPY_ITERATIONS=1
+COPY_ITERATIONS=$4
 
 CEPH_POOL=''
 CEPH_USER=''
@@ -49,10 +52,10 @@ rbd --pool $CEPH_POOL --id $CEPH_USER ls >/dev/null 2>&1 || { echo >&2 "There wa
 # Fun functions
 ###################################################################################
 
-function iterate_and_measure { 
+function iterate_and_measure {
   echo -e "iter\tstart time\trun(s)\texit\tcommand" >> $LOG_FILE
   for i in $(seq 1 $THREADS)
-  do 
+  do
     START_TIME=$(date "+%H:%M:%S")
     # Append iterator to imagename
     CMD="$1$i"
@@ -61,7 +64,7 @@ function iterate_and_measure {
 }
 
 function log_shizz {
-  if [ "$the_world_is_flat" = true ] 
+  if [ "$the_world_is_flat" = true ]
   then
     echo "********************************************************************" | tee -a $LOG_FILE
     echo "  $1" | tee -a $LOG_FILE
@@ -75,7 +78,7 @@ function ceph_test_parallel {
   for i in $(seq 1 $ITERATIONS)
   do
     # Create phase
-    
+
     log_shizz "Parallel image '$IMAGE_NAME' clone. Threads $THREADS. Iterations: $i/$ITERATIONS."
     iterate_and_measure "rbd --pool $CEPH_POOL --id $CEPH_USER clone --image-feature layering $IMAGE_NAME@snap $CEPH_POOL/$IMAGE_NAME-"
 
@@ -84,7 +87,7 @@ function ceph_test_parallel {
 
     log_shizz "rbd map images"
     parallel rbd --pool $CEPH_POOL --id $CEPH_USER map ::: $(seq -f "$IMAGE_NAME-%01g" $THREADS)
-    
+
     log_shizz "Mount images"
     parallel mount -v /dev/rbd/$CEPH_POOL/{} $MOUNT_DIR/{} ::: $(seq -f "$IMAGE_NAME-%01g" $THREADS)
 
@@ -97,7 +100,7 @@ function ceph_test_parallel {
 
     # Show copied data sizes
 
-    for i in $(seq 1 $THREADS); do du -hs $MOUNT_DIR/$IMAGE_NAME-$i ; done  | tee -a $LOG_FILE 
+    for i in $(seq 1 $THREADS); do du -hs $MOUNT_DIR/$IMAGE_NAME-$i ; done  | tee -a $LOG_FILE
 
     # Clean phase
 
